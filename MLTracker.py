@@ -8,10 +8,22 @@ from io import StringIO
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import accuracy_score, classification_report, mean_squared_error
+from sklearn.linear_model import LogisticRegression
 import networkx as nx
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.arima.model import ARIMA
+from xgboost import XGBClassifier
+import shap
 import warnings
+from catboost import CatBoostClassifier
+from pycaret.classification import setup, compare_models
+from lightgbm import LGBMClassifier
+from tsfresh import extract_features
+from pmdarima import auto_arima
+import optuna
+from mlxtend.classifier import StackingClassifier
+import h2o
+from h2o.automl import H2OAutoML
 warnings.filterwarnings('ignore')
 
 # Set plot style
@@ -264,7 +276,50 @@ plt.title('Top 10 Features for Predicting Deadline Adherence')
 plt.xlabel('Importance')
 plt.ylabel('Feature')
 plt.tight_layout()
-plt.show()
+# Removed as it has been moved to the top of the file
+
+# Explain the model's predictions
+explainer = shap.Explainer(rf_model, X_train)
+shap_values = explainer(X_test)
+
+# Visualize feature importance
+shap.summary_plot(shap_values, X_test)
+
+# Train an XGBoost classifier
+xgb_model = XGBClassifier(n_estimators=100, learning_rate=0.1, random_state=42)
+xgb_model.fit(X_train, y_train)
+
+# Evaluate the model
+y_pred_xgb = xgb_model.predict(X_test)
+accuracy_xgb = accuracy_score(y_test, y_pred_xgb)
+print(f"\nXGBoost Model Accuracy: {accuracy_xgb:.4f}")
+
+# Train a CatBoost classifier
+catboost_model = CatBoostClassifier(iterations=100, learning_rate=0.1, random_state=42, verbose=0)
+catboost_model.fit(X_train, y_train)
+
+# Evaluate the model
+y_pred_catboost = catboost_model.predict(X_test)
+accuracy_catboost = accuracy_score(y_test, y_pred_catboost)
+print(f"\nCatBoost Model Accuracy: {accuracy_catboost:.4f}")
+
+# Train a LightGBM classifier
+lgbm_model = LGBMClassifier(n_estimators=100, learning_rate=0.1, random_state=42)
+lgbm_model.fit(X_train, y_train)
+
+# Evaluate the model
+y_pred_lgbm = lgbm_model.predict(X_test)
+accuracy_lgbm = accuracy_score(y_test, y_pred_lgbm)
+print(f"\nLightGBM Model Accuracy: {accuracy_lgbm:.4f}")
+
+# Create a stacking classifier
+stack_model = StackingClassifier(classifiers=[rf_model, xgb_model], meta_classifier=LogisticRegression())
+stack_model.fit(X_train, y_train)
+
+# Evaluate the model
+y_pred_stack = stack_model.predict(X_test)
+accuracy_stack = accuracy_score(y_test, y_pred_stack)
+print(f"\nStacking Model Accuracy: {accuracy_stack:.4f}")
 
 # Predict project duration
 def prepare_data_for_duration_prediction(df):
@@ -308,6 +363,37 @@ plt.title('Actual vs Predicted Project Duration')
 plt.xlabel('Actual Duration (days)')
 plt.ylabel('Predicted Duration (days)')
 plt.show()
+
+# Set up the PyCaret environment
+clf_setup = setup(data=df_clean, target='Met Deadline Binary', silent=True)
+
+# Compare models and select the best one
+best_model = compare_models()
+
+# Optimize Random Forest hyperparameters using Optuna
+def objective(trial):
+    n_estimators = trial.suggest_int('n_estimators', 50, 200)
+    max_depth = trial.suggest_int('max_depth', 3, 10)
+    rf_model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, random_state=42)
+    rf_model.fit(X_train, y_train)
+    return accuracy_score(y_test, rf_model.predict(X_test))
+
+study = optuna.create_study(direction='maximize')
+study.optimize(objective, n_trials=50)
+print(f"Best parameters: {study.best_params}")
+
+# Initialize H2O
+h2o.init()
+
+# Convert data to H2O frame
+h2o_df = h2o.H2OFrame(df_clean)
+
+# Run AutoML
+aml = H2OAutoML(max_models=10, seed=42)
+aml.train(x=['Planned Duration', 'Start Month', 'Start Year'], y='Met Deadline Binary', training_frame=h2o_df)
+
+# View leaderboard
+print(aml.leaderboard)
 
 # 4. PRESCRIPTIVE ANALYSIS
 print("\n" + "="*50)
@@ -637,6 +723,10 @@ if len(monthly_completions) >= 12:  # Need at least a year of data for seasonal 
 else:
     print("\nNot enough data points for seasonal decomposition (need at least 12 months).")
 
+# Extract features from time series data
+time_series_features = extract_features(df_clean, column_id='Project ID', column_sort='Completion Date')
+print(time_series_features.head())
+
 # 9. FORECASTING
 print("\n" + "="*50)
 print("9. FORECASTING")
@@ -705,6 +795,14 @@ if len(monthly_completions) >= 12:
         print(f"\nCould not perform forecasting: {e}")
 else:
     print("\nNot enough data points for reliable forecasting (need at least 12 months).")
+
+# Automatically find the best ARIMA model
+arima_model = auto_arima(monthly_completions, seasonal=True, m=12)
+print(arima_model.summary())
+
+# Forecast future values
+forecast = arima_model.predict(n_periods=6)
+print(f"Forecast: {forecast}")
 
 # 10. CONCLUSION AND RECOMMENDATIONS
 print("\n" + "="*50)
