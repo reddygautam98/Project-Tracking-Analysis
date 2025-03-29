@@ -847,109 +847,9 @@ def perform_time_series_analysis_with_additional_insights(df: pd.DataFrame) -> N
             
         # Convert to time series with proper datetime index
         ts = monthly_completions.to_timestamp().asfreq('M')
+        print("\nTime series data (monthly completions):")
+        print(ts)
         
-        # ----------------------
-        # 1. Bar Chart of Monthly Completions
-        # ----------------------
-        fig1, ax1 = plt.subplots(figsize=(16, 8))
-        
-        # Plot the bar chart
-        ts.plot(kind='bar', ax=ax1, color='skyblue', label='Monthly Completions')
-        
-        # Customize the plot
-        ax1.set_title('Number of Projects Completed by Month (Bar Chart)', fontsize=16)
-        ax1.set_xlabel('Month', fontsize=12)
-        ax1.set_ylabel('Number of Projects', fontsize=12)
-        ax1.grid(axis='y', linestyle='--', alpha=0.7)
-        ax1.legend(fontsize=12)
-        
-        # Rotate x-axis labels for better readability
-        plt.xticks(rotation=45)
-        
-        fig1.tight_layout()
-        fig1.savefig('charts/monthly_completions_bar_chart.png', dpi=300)
-        plt.close(fig1)
-        print("✓ Created bar chart of monthly completions")
-        
-        # ----------------------
-        # 2. Cumulative Completions Line Chart
-        # ----------------------
-        cumulative_completions = ts.cumsum()
-        
-        fig2, ax2 = plt.subplots(figsize=(16, 8))
-        
-        # Plot the cumulative completions
-        cumulative_completions.plot(
-            ax=ax2, 
-            marker='o', 
-            markersize=8, 
-            linewidth=2, 
-            color='green',
-            label='Cumulative Completions'
-        )
-        
-        # Customize the plot
-        ax2.set_title('Cumulative Project Completions Over Time', fontsize=16)
-        ax2.set_xlabel('Month', fontsize=12)
-        ax2.set_ylabel('Cumulative Number of Projects', fontsize=12)
-        ax2.grid(True, linestyle='--', alpha=0.7)
-        ax2.legend(fontsize=12)
-        
-        # Rotate x-axis labels for better readability
-        plt.xticks(rotation=45)
-        
-        fig2.tight_layout()
-        fig2.savefig('charts/cumulative_completions_line_chart.png', dpi=300)
-        plt.close(fig2)
-        print("✓ Created cumulative completions line chart")
-        
-        # ----------------------
-        # 3. Heatmap of Project Completions by Month and Year
-        # ----------------------
-        try:
-            # Extract year and month for heatmap
-            df['Completion Year'] = df['Completion Date'].dt.year
-            df['Completion Month'] = df['Completion Date'].dt.month_name()
-            
-            # Create pivot table for heatmap
-            heatmap_data = df.pivot_table(
-                index='Completion Month',
-                columns='Completion Year',
-                values='Project Name',
-                aggfunc='count',
-                fill_value=0
-            )
-            
-            # Order months chronologically
-            month_order = [
-                'January', 'February', 'March', 'April', 'May', 'June',
-                'July', 'August', 'September', 'October', 'November', 'December'
-            ]
-            heatmap_data = heatmap_data.reindex(month_order)
-            
-            # Create heatmap
-            fig3, ax3 = plt.subplots(figsize=(12, 8))
-            sns.heatmap(
-                heatmap_data,
-                annot=True,
-                fmt='g',
-                cmap='YlGnBu',
-                linewidths=0.5,
-                ax=ax3
-            )
-            
-            ax3.set_title('Monthly Project Completions Heatmap', fontsize=16)
-            ax3.set_xlabel('Year', fontsize=12)
-            ax3.set_ylabel('Month', fontsize=12)
-            
-            fig3.tight_layout()
-            fig3.savefig('charts/monthly_completions_heatmap.png', dpi=300)
-            plt.close(fig3)
-            print("✓ Created monthly completions heatmap")
-            
-        except Exception as e:
-            print(f"Error creating heatmap: {e}")
-            
     except Exception as e:
         print(f"Error in time series analysis: {e}")
 
@@ -1106,44 +1006,7 @@ def perform_network_analysis(df: pd.DataFrame) -> Tuple[Optional[nx.Graph], Opti
             try:
                 communities = community.greedy_modularity_communities(G)
                 print(f"\nNumber of project clusters detected: {len(communities)}")
-                
-                # Create a custom colormap with distinct colors for each community
-                colors = plt.cm.get_cmap('tab20', len(communities))
-                
-                # Create network visualization
-                plt.figure(figsize=(16, 12))
-                
-                # Position nodes using spring layout
-                pos = nx.spring_layout(G, k=0.3, iterations=50)
-                
-                # Draw edges first (light gray)
-                nx.draw_networkx_edges(G, pos, alpha=0.1, width=1, edge_color='gray')
-                
-                # Draw nodes with community colors
-                for i, comm in enumerate(communities):
-                    nx.draw_networkx_nodes(
-                        G, pos, nodelist=list(comm),
-                        node_color=[colors(i)] * len(comm),
-                        node_size=200,
-                        alpha=0.8,
-                        label=f'Cluster {i+1}'
-                    )
-                
-                # Draw labels for nodes with high betweenness centrality
-                high_betweenness = [n for n, v in betweenness_centrality.items() if v > np.quantile(list(betweenness_centrality.values()), 0.9)]
-                labels = {n: n for n in high_betweenness}
-                nx.draw_networkx_labels(G, pos, labels, font_size=10, font_weight='bold')
-                
-                # Add legend and title
-                plt.legend(scatterpoints=1, frameon=True, title='Project Clusters')
-                plt.title('Project Dependency Network Analysis', fontsize=16)
-                
-                # Save the figure
-                plt.tight_layout()
-                plt.savefig('charts/project_dependency_network.png', dpi=300, bbox_inches='tight')
-                plt.close()
-                print("✓ Project dependency network visualization created")
-                
+        
                 # Analyze impact of delays
                 delayed_projects = []
                 for node, attrs in G.nodes(data=True):
