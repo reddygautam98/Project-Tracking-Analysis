@@ -45,6 +45,27 @@
 - **Heatmaps, time-series plots, and statistical reports** 📈.
 - **PDF/Excel reports** for easy sharing 📄.
 
+**Anomaly chart**
+
+![Anomaly chart](charts/anomaly_detection.png)
+
+**Correlation Chart**
+
+![alt text](image.png)
+
+**Enhanced_seasonality_components Chart**
+
+![alt text](image-1.png)
+
+**Planned_vs_actual_duration Chart**
+
+![alt text](image-2.png)
+
+**forecast_overview Chart**
+
+![alt text](image-3.png)
+
+
 ---
 
 ## ⚙️ Installation
