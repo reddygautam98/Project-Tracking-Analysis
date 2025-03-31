@@ -86,6 +86,8 @@ def fetch_data() -> pd.DataFrame:
     try:
         return pd.read_csv(file_path)
     except Exception as e:
+        print(f"Error: {e}")
+        print(f"Error: {e}")
         print(f"Error loading file from {file_path}: {e}")
         print("Exiting due to missing or invalid dataset.")
         raise
@@ -223,7 +225,8 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
             risk_factors.append(duration_risk)
     
     if risk_factors:
-        # Use pandas add() method with fill_value=0 to properly add Series objects
+        # Convert all risk factors to numeric before summing
+        risk_factors = [factor.astype(float) for factor in risk_factors]
         risk_sum = risk_factors[0].copy()
         for factor in risk_factors[1:]:
             risk_sum = risk_sum.add(factor, fill_value=0)
@@ -690,7 +693,8 @@ def train_classification_models(
                 base_estimators.append((
                     name,
                     model_info['pipeline']
-                ))
+                    )
+                )
             
             # Create stacking classifier
             stacking_clf = StackingClassifier(
@@ -967,201 +971,132 @@ print("\n7. ADVANCED FORECASTING WITH PROPHET")
 
 def forecast_with_prophet(df: pd.DataFrame) -> Dict[str, Any]:
     """
-    Forecast project completions using Prophet
-    
+    Perform advanced forecasting using Prophet.
+
     Parameters:
-    df (pandas.DataFrame): Processed project tracking data
-    
+    df (pd.DataFrame): Processed project tracking data
+
     Returns:
-    Dict[str, Any]: Forecasting results
+    Dict[str, Any]: Forecasting results including metrics and visualizations
     """
-    print("Forecasting project completions with Prophet...")
-    
-    # Check if we have the necessary data
-    if 'Completion Date' not in df.columns:
-        print("No 'Completion Date' column found for forecasting")
-        return {}
-    
     try:
-        # Prepare data for Prophet
-        completion_counts = df.groupby(pd.Grouper(key='Completion Date', freq='D')).size().reset_index()
-        completion_counts.columns = ['ds', 'y']
-        
-        # Check if we have enough data
-        if len(completion_counts) < 14:
-            print("Not enough time series data for forecasting (need at least 14 days)")
+        # Ensure the required columns are present
+        if 'Completion Date' not in df.columns:
+            print("Error: 'Completion Date' column is missing.")
             return {}
-        
-        # Fill missing dates with zeros
-        date_range = pd.date_range(start=completion_counts['ds'].min(), end=completion_counts['ds'].max())
-        completion_counts = completion_counts.set_index('ds').reindex(date_range, fill_value=0).reset_index()
-        completion_counts.columns = ['ds', 'y']
-        
-        # Create and fit Prophet model
-        model = Prophet(
-            yearly_seasonality=True,
-            weekly_seasonality=True,
-            daily_seasonality=False,
-            seasonality_mode='additive',
-            interval_width=0.95
-        )
-        
-        model.fit(completion_counts)
-        
-        # Create future dataframe for predictions
-        future = model.make_future_dataframe(periods=30)  # Forecast 30 days ahead
-        
-        # Make predictions
+
+        # Prepare the data for Prophet
+        df_prophet = df[['Completion Date']].copy()
+        df_prophet.rename(columns={'Completion Date': 'ds'}, inplace=True)
+        df_prophet['y'] = 1  # Count each project as 1 for forecasting
+
+        # Aggregate data by date
+        df_prophet = df_prophet.groupby('ds').sum().reset_index()
+
+        # Initialize the Prophet model
+        model = Prophet(yearly_seasonality=True, weekly_seasonality=True)
+        model.add_seasonality(name='yearly', period=365.25, fourier_order=10)
+        model.add_seasonality(name='weekly', period=7, fourier_order=3)
+
+        # Fit the model
+        model.fit(df_prophet)
+
+        # Create a future DataFrame
+        future = model.make_future_dataframe(periods=365)  # Forecast for 1 year into the future
+
+        # Generate the forecast
         forecast = model.predict(future)
-        
-        # Create forecast visualization with enhanced styling
-        plt.figure(figsize=(14, 8))
-        # Plot actual values
-        plt.plot(completion_counts['ds'], completion_counts['y'], 'o', 
-                color=COLORS['primary'], alpha=0.8, markersize=6, label='Actual')
-        # Plot forecast
-        plt.plot(forecast['ds'], forecast['yhat'], '-', 
-                color=COLORS['secondary'], linewidth=2, label='Forecast')
-        # Plot uncertainty intervals
-        plt.fill_between(forecast['ds'], forecast['yhat_lower'], forecast['yhat_upper'], 
-                        color=COLORS['secondary'], alpha=0.2, label='95% Confidence Interval')
-        plt.title('Project Completions Forecast', fontsize=16, fontweight='bold')
-        plt.xlabel('Date', fontsize=14)
-        plt.ylabel('Number of Completions', fontsize=14)
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.legend(fontsize=12)
-        plt.tight_layout()
-        plt.savefig('charts/project_completions_forecast.png', dpi=300)
-        plt.close()
-        print("✓ Created project completions forecast visualization")
-        
-        # Create components visualization with enhanced styling
-        fig, axes = plt.subplots(3, 1, figsize=(14, 12))
-        
-        # Trend component
-        axes[0].plot(forecast['ds'], forecast['trend'], color=COLORS['dark'], linewidth=2)
-        axes[0].set_title('Trend Component', fontsize=14, fontweight='bold')
-        axes[0].set_xlabel('')
-        axes[0].set_ylabel('Trend', fontsize=12)
-        axes[0].grid(True, linestyle='--', alpha=0.7)
-        
-        # Yearly seasonality
-        if 'yearly' in forecast.columns:
-            yearly_data = forecast.set_index('ds')['yearly'].groupby(forecast['ds'].dt.dayofyear).mean()
-            x_values = np.linspace(0, 365, len(yearly_data))
-            axes[1].plot(x_values, yearly_data, color=COLORS['tertiary'], linewidth=2)
-            axes[1].set_title('Yearly Seasonality', fontsize=14, fontweight='bold')
-            axes[1].set_xlabel('')
-            axes[1].set_ylabel('Effect', fontsize=12)
-            axes[1].grid(True, linestyle='--', alpha=0.7)
-            # Add month labels
-            month_starts = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
-            month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-            axes[1].set_xticks(month_starts)
-            axes[1].set_xticklabels(month_names)
-        
-        # Weekly seasonality
-        if 'weekly' in forecast.columns:
-            weekly_data = forecast.set_index('ds')['weekly'].groupby(forecast['ds'].dt.dayofweek).mean()
-            axes[2].plot(range(len(weekly_data)), weekly_data, color=COLORS['info'], linewidth=2)
-            axes[2].set_title('Weekly Seasonality', fontsize=14, fontweight='bold')
-            axes[2].set_xlabel('Day of Week', fontsize=12)
-            axes[2].set_ylabel('Effect', fontsize=12)
-            axes[2].grid(True, linestyle='--', alpha=0.7)
-            axes[2].set_xticks(range(7))
-            axes[2].set_xticklabels(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
-        
-        plt.tight_layout()
-        plt.savefig('charts/forecast_components.png', dpi=300)
-        plt.close()
-        print("✓ Created forecast components visualization")
-        
-        # Create interactive Plotly forecast
-        fig = go.Figure()
-        
-        # Add actual values
-        fig.add_trace(go.Scatter(
-            x=completion_counts['ds'],
-            y=completion_counts['y'],
-            mode='markers',
-            name='Actual',
-            marker=dict(color=COLORS['primary'], size=8)
-        ))
-        
-        # Add forecast line
-        fig.add_trace(go.Scatter(
-            x=forecast['ds'],
-            y=forecast['yhat'],
-            mode='lines',
-            name='Forecast',
-            line=dict(color=COLORS['secondary'], width=2)
-        ))
-        
-        # Add uncertainty intervals
-        fig.add_trace(go.Scatter(
-            x=forecast['ds'],
-            y=forecast['yhat_upper'],
-            mode='lines',
-            name='Upper Bound',
-            line=dict(width=0),
-            showlegend=False
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=forecast['ds'],
-            y=forecast['yhat_lower'],
-            mode='lines',
-            name='Lower Bound',
-            line=dict(width=0),
-            fill='tonexty',
-            fillcolor='rgba(46, 204, 113, 0.2)',
-            showlegend=False
-        ))
-        
-        # Update layout
-        fig.update_layout(
-            title='Project Completions Forecast (30-Day Horizon)',
-            xaxis_title='Date',
-            yaxis_title='Number of Completions',
-            hovermode='x unified',
-            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
-            template='plotly_white'
-        )
-        
-        # Save as HTML
-        pio.write_html(fig, 'dashboards/interactive_forecast.html')
-        print("✓ Created interactive forecast dashboard")
-        
-        # Calculate forecast metrics
-        forecast_metrics = {
-            'mean_forecast': float(forecast[forecast['ds'] > completion_counts['ds'].max()]['yhat'].mean()),
-            'total_forecast': float(forecast[forecast['ds'] > completion_counts['ds'].max()]['yhat'].sum()),
-            'trend_direction': 'increasing' if forecast['trend'].iloc[-1] > forecast['trend'].iloc[0] else 'decreasing',
-            'weekly_peak_day': forecast['weekly'].iloc[:-30].argmax() % 7
-        }
-        
-        print("\nForecast insights:")
-        print(f"  - Expected average daily completions: {forecast_metrics['mean_forecast']:.2f}")
-        print(f"  - Total expected completions (next 30 days): {forecast_metrics['total_forecast']:.1f}")
-        print(f"  - Overall trend: {forecast_metrics['trend_direction']}")
-        
+
+        # Save visualizations
+        fig1 = model.plot(forecast)
+        fig1.savefig('charts/forecast_overview.png', dpi=300)
+
+        fig2 = model.plot_components(forecast)
+        fig2.savefig('charts/forecast_components.png', dpi=300)
+
+        print("✓ Forecasting completed successfully.")
+
         # Return results
         return {
-            'forecast': forecast.to_dict('records'),
-            'metrics': forecast_metrics,
-            'visualizations': [
-                'charts/project_completions_forecast.png',
-                'charts/forecast_components.png',
-                'dashboards/interactive_forecast.html'
-            ]
+            'forecast': forecast,
+            'visualizations': ['charts/forecast_overview.png', 'charts/forecast_components.png'],
+            'metrics': {
+                'mean_forecast': forecast['yhat'].mean(),
+                'total_forecast': forecast['yhat'].sum(),
+                'trend_direction': 'increasing' if forecast['trend'].iloc[-1] > forecast['trend'].iloc[0] else 'decreasing'
+            }
         }
-    
+
     except Exception as e:
-        print(f"Error in Prophet forecasting: {e}")
+        print(f"Error in forecasting: {e}")
         return {}
 
 # Forecast with Prophet
+# Ensure the function `forecast_with_prophet` is defined before calling it
 forecast_results = forecast_with_prophet(df_processed)
+
+# Enhanced Yearly and Weekly Seasonality Charts
+def plot_seasonality_components(forecast: pd.DataFrame) -> None:
+    """
+    Plot enhanced yearly and weekly seasonality components from the forecast.
+
+    Parameters:
+    forecast (pd.DataFrame): Forecast data from Prophet
+    """
+    try:
+        # Ensure the required columns are present
+        if 'yearly' not in forecast.columns or 'weekly' not in forecast.columns:
+            print("Error: 'yearly' or 'weekly' seasonality components are missing.")
+            return
+
+        # Extract yearly and weekly seasonality
+        yearly_data = forecast[['ds', 'yearly']].dropna()
+        weekly_data = forecast[['ds', 'weekly']].dropna()
+
+        # Create a figure with subplots
+        fig, axes = plt.subplots(3, 1, figsize=(14, 12), gridspec_kw={'hspace': 0.4})
+
+        # Trend Component
+        if 'trend' in forecast.columns:
+            axes[0].plot(forecast['ds'], forecast['trend'], color='blue', linewidth=2)
+            axes[0].set_title('Trend Component', fontsize=16, fontweight='bold')
+            axes[0].set_xlabel('Date', fontsize=14)
+            axes[0].set_ylabel('Trend', fontsize=14)
+            axes[0].grid(True, linestyle='--', alpha=0.7)
+
+        # Yearly Seasonality
+        axes[1].plot(yearly_data['ds'].dt.dayofyear, yearly_data['yearly'], color='green', linewidth=2)
+        axes[1].fill_between(yearly_data['ds'].dt.dayofyear, yearly_data['yearly'], color='green', alpha=0.2)
+        axes[1].set_title('Yearly Seasonality', fontsize=16, fontweight='bold')
+        axes[1].set_xlabel('Day of Year', fontsize=14)
+        axes[1].set_ylabel('Effect', fontsize=14)
+        axes[1].grid(True, linestyle='--', alpha=0.7)
+
+        # Weekly Seasonality
+        days_of_week = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        weekly_data['day_of_week'] = weekly_data['ds'].dt.dayofweek
+        weekly_avg = weekly_data.groupby('day_of_week')['weekly'].mean()
+        axes[2].bar(days_of_week, weekly_avg, color='orange', alpha=0.8)
+        axes[2].set_title('Weekly Seasonality', fontsize=16, fontweight='bold')
+        axes[2].set_xlabel('Day of Week', fontsize=14)
+        axes[2].set_ylabel('Effect', fontsize=14)
+        axes[2].grid(True, linestyle='--', alpha=0.7)
+
+        # Save the chart
+        plt.tight_layout()
+        plt.savefig('charts/enhanced_seasonality_components.png', dpi=300)
+        plt.close()
+        print("✓ Created enhanced yearly and weekly seasonality charts")
+
+    except Exception as e:
+        print(f"Error in plotting seasonality components: {e}")
+
+# Call the function to plot seasonality components
+if forecast_results and 'forecast' in forecast_results:
+    forecast = pd.DataFrame(forecast_results['forecast'])
+    plot_seasonality_components(forecast)
+else:
+    print("No forecast data available for plotting seasonality components.")
 
 # ----------------------
 # 8. EXPLAINABLE AI (XAI) ENHANCEMENTS
@@ -2845,3 +2780,51 @@ print("- Alerts Dashboard: alerts/project_alerts.html")
 print("- Charts: Multiple visualizations in the 'charts' directory")
 
 print("\nEnhanced MLTracker analysis completed successfully!")
+
+# ----------------------
+# YEARLY UPDATE LINE CHART
+# ----------------------
+print("\nCreating a line chart for yearly updates...")
+
+def plot_yearly_updates(df: pd.DataFrame) -> None:
+    """
+    Create a line chart showing yearly updates based on project completions.
+    
+    Parameters:
+    df (pandas.DataFrame): Processed project tracking data
+    """
+    if 'Completion Date' not in df.columns:
+        print("No 'Completion Date' column found for yearly updates.")
+        return
+    
+    try:
+        # Extract year from the Completion Date
+        df['Completion Year'] = df['Completion Date'].dt.year
+        
+        # Group by year and count the number of completed projects
+        yearly_data = df.groupby('Completion Year').size()
+        
+        # Plot the line chart
+        plt.figure(figsize=(10, 6))
+        plt.plot(yearly_data.index, yearly_data.values, marker='o', color=COLORS['primary'], linewidth=2)
+        
+        # Add labels and title
+        plt.title('Yearly Project Completions', fontsize=16, fontweight='bold')
+        plt.xlabel('Year', fontsize=14)
+        plt.ylabel('Number of Projects Completed', fontsize=14)
+        
+        # Add grid for better readability
+        plt.grid(True, linestyle='--', alpha=0.7)
+        
+        # Save the chart
+        chart_path = 'charts/yearly_project_completions.png'
+        plt.tight_layout()
+        plt.savefig(chart_path, dpi=300)
+        plt.close()
+        print(f"✓ Created yearly updates line chart: {chart_path}")
+    
+    except Exception as e:
+        print(f"Error creating yearly updates line chart: {e}")
+
+# Call the function to create the chart
+plot_yearly_updates(df_processed)

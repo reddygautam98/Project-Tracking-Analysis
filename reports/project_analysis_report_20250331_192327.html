@@ -1,0 +1,292 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Project Tracking Analysis Report</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            h1, h2, h3, h4 {
+                color: #2c3e50;
+            }
+            .header {
+                background-color: #34495e;
+                color: white;
+                padding: 20px;
+                text-align: center;
+                margin-bottom: 30px;
+                border-radius: 5px;
+            }
+            .section {
+                margin-bottom: 40px;
+                padding: 20px;
+                background-color: #f9f9f9;
+                border-radius: 5px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+            .metric-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                margin-bottom: 20px;
+            }
+            .metric-box {
+                background-color: white;
+                border-radius: 5px;
+                padding: 15px;
+                margin-bottom: 15px;
+                width: 30%;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                text-align: center;
+            }
+            .metric-value {
+                font-size: 24px;
+                font-weight: bold;
+                color: #3498db;
+                margin: 10px 0;
+            }
+            .chart-container {
+                margin: 20px 0;
+                text-align: center;
+            }
+            .chart {
+                max-width: 100%;
+                height: auto;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+            }
+            th, td {
+                padding: 12px 15px;
+                border-bottom: 1px solid #ddd;
+                text-align: left;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+            tr:hover {
+                background-color: #f5f5f5;
+            }
+            .footer {
+                text-align: center;
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 1px solid #eee;
+                color: #7f8c8d;
+                font-size: 14px;
+            }
+            .alert {
+                padding: 15px;
+                margin-bottom: 20px;
+                border-radius: 5px;
+            }
+            .alert-success {
+                background-color: #d4edda;
+                color: #155724;
+            }
+            .alert-warning {
+                background-color: #fff3cd;
+                color: #856404;
+            }
+            .alert-danger {
+                background-color: #f8d7da;
+                color: #721c24;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Project Tracking Analysis Report</h1>
+            <p>Generated on 2025-03-31 19:23:27</p>
+        </div>
+        
+        <div class="section">
+            <h2>Executive Summary</h2>
+    
+            <div class="metric-container">
+                <div class="metric-box">
+                    <h3>Total Projects</h3>
+                    <div class="metric-value">500</div>
+                </div>
+                <div class="metric-box">
+                    <h3>Deadline Compliance</h3>
+                    <div class="metric-value">46.0%</div>
+                </div>
+                <div class="metric-box">
+                    <h3>Average Delay</h3>
+                    <div class="metric-value">3.6 days</div>
+                </div>
+            </div>
+            
+            <p>This report provides a comprehensive analysis of project tracking data, including exploratory analysis, 
+            predictive modeling, anomaly detection, and forecasting. Key insights and recommendations are provided to 
+            improve project management practices and outcomes.</p>
+    
+            <div class="alert alert-danger">
+                <strong>Key Finding:</strong> Critical: Low deadline compliance rate indicates significant project management issues.
+            </div>
+        </div>
+    
+        <div class="section">
+            <h2>Exploratory Data Analysis</h2>
+    
+            <div class="chart-container">
+                <h3>Project Deadline Compliance</h3>
+                <img class="chart" src="../charts/projects_meeting_deadlines.png" alt="Deadline Compliance Chart">
+            </div>
+        
+            <div class="chart-container">
+                <h3>Distribution of Project Delays</h3>
+                <img class="chart" src="../charts/distribution_of_project_delays.png" alt="Delay Distribution Chart">
+            </div>
+        
+            <div class="chart-container">
+                <h3>Top Reasons for Missed Deadlines</h3>
+                <img class="chart" src="../charts/top_reasons_for_missed_deadlines.png" alt="Missed Reasons Chart">
+            </div>
+        
+        </div>
+    
+        <div class="section">
+            <h2>Predictive Modeling</h2>
+        
+            <h3>Model Performance Comparison</h3>
+            <table>
+                <tr>
+                    <th>Model</th>
+                    <th>Accuracy</th>
+                    <th>Notes</th>
+                </tr>
+        
+                <tr>
+                    <td>LOGISTIC</td>
+                    <td>85.33%</td>
+                    <td>Logistic classifier trained on project features</td>
+                </tr>
+            
+                <tr>
+                    <td>RF</td>
+                    <td>84.00%</td>
+                    <td>Rf classifier trained on project features</td>
+                </tr>
+            
+                <tr>
+                    <td>XGB</td>
+                    <td>82.67%</td>
+                    <td>Xgb classifier trained on project features</td>
+                </tr>
+            
+                <tr>
+                    <td>LGB</td>
+                    <td>82.67%</td>
+                    <td>Lgb classifier trained on project features</td>
+                </tr>
+            
+                <tr>
+                    <td>CATBOOST</td>
+                    <td>84.67%</td>
+                    <td>Catboost classifier trained on project features</td>
+                </tr>
+            
+                <tr>
+                    <td>STACKING</td>
+                    <td>86.00%</td>
+                    <td>Stacking classifier trained on project features</td>
+                </tr>
+            
+            </table>
+        
+        </div>
+        
+    <div class="section">
+        <h2>Anomaly Detection</h2>
+        <p>The analysis identified projects that deviate significantly from normal patterns, which may require special attention.</p>
+    
+        <div class="chart-container">
+            <h3>Anomalous Projects</h3>
+            <img class="chart" src="../charts/anomaly_detection.png" alt="Anomaly Detection Chart">
+        </div>
+    
+        <div class="metric-container">
+            <div class="metric-box">
+                <h3>Anomalous Projects</h3>
+                <div class="metric-value">50</div>
+            </div>
+            <div class="metric-box">
+                <h3>Percentage</h3>
+                <div class="metric-value">10.0%</div>
+            </div>
+        </div>
+    </div>
+    
+        <div class="section">
+            <h2>Project Completion Forecasting</h2>
+            <p>Advanced time series forecasting was used to predict future project completions.</p>
+        
+            <div class="chart-container">
+                <h3>Project Completions Forecast</h3>
+                <img class="chart" src="../charts/forecast_overview.png" alt="Project Completions Forecast Chart">
+            </div>
+            
+            <div class="chart-container">
+                <h3>Forecast Components</h3>
+                <img class="chart" src="../charts/forecast_components.png" alt="Forecast Components Chart">
+            </div>
+            
+            <div class="metric-container">
+                <div class="metric-box">
+                    <h3>Daily Avg (Next 30 Days)</h3>
+                    <div class="metric-value">1.61</div>
+                </div>
+                <div class="metric-box">
+                    <h3>Total (Next 30 Days)</h3>
+                    <div class="metric-value">1096.0</div>
+                </div>
+                <div class="metric-box">
+                    <h3>Trend</h3>
+                    <div class="metric-value">Increasing</div>
+                </div>
+            </div>
+            
+        </div>
+        
+    <div class="section">
+        <h2>Recommendations</h2>
+        <ol>
+    
+        <li>Implement a comprehensive review of project management processes to address the critical issue of missed deadlines.</li>
+        
+        <li>Address the most common reason for delays ('Scope Change') with targeted interventions.</li>
+        
+        <li>Prepare for an increasing trend in project completions by ensuring adequate resources are available.</li>
+        
+        <li>Investigate anomalous projects identified in the analysis to understand root causes and prevent similar issues.</li>
+        
+        <li>Implement a real-time monitoring system to track project progress and identify potential issues early.</li>
+        
+        <li>Use the predictive models to assess risk for new projects before they begin.</li>
+        
+        <li>Conduct regular scenario simulations to prepare for potential project disruptions.</li>
+        
+        </ol>
+    </div>
+    
+        <div class="footer">
+            <p>Generated by Enhanced MLTracker - Advanced Project Tracking & Analysis System</p>
+            <p>2025-03-31 19:23:27</p>
+        </div>
+    </body>
+    </html>
+    
