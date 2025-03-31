@@ -16,6 +16,35 @@
 
 ---
 
+## 🌐 Project Tracker Website
+Explore the **Project Tracker Website** for a live demonstration of the system's capabilities. The website provides an interactive interface for tracking project performance, visualizing key metrics, and generating insights.
+
+🔗 **Website Folder**: `C:\Users\reddy\Downloads\Project Tracking Analysis\project-tracker Website`
+
+**Website**
+
+- Dashboard 
+
+![alt text](<Screenshot 2025-04-01 000556.png>)
+
+- Exploratory Analysis
+
+![alt text](<Screenshot 2025-04-01 000609.png>)
+
+- Predictive Modeling
+
+![alt text](<Screenshot 2025-04-01 000622.png>)
+
+-  Anomalies
+
+![alt text](<Screenshot 2025-04-01 000631.png>)
+
+- Forecasting 
+
+![alt text](<Screenshot 2025-04-01 000649.png>)
+
+---
+
 ## 🔥 Features Breakdown
 ### 📥 Data Collection & Ingestion
 - Loads **project tracking data** from CSV or other structured formats.
@@ -68,6 +97,7 @@
 **anomaly_detection_dashboard**
 
 ![alt text](<Screenshot 2025-03-31 223810.png>)
+
 
 
 **Notification**
