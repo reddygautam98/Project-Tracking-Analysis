@@ -65,6 +65,10 @@
 
 ![alt text](image-3.png)
 
+**anomaly_detection_dashboard**
+
+![alt text](<Screenshot 2025-03-31 223810.png>)
+
 
 ---
 
